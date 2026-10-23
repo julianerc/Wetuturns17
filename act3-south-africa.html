@@ -458,21 +458,40 @@
 <script>
 /* =========================================================
    FOTOS DEL ACT 3
-   Las fotos van en la carpeta images/act3/ con su nombre original,
-   por ejemplo: "We Celebrated (17).jpg".
-   Si tus archivos terminan en .jpeg, .JPG o .png, cambiá EXT abajo
-   (mayúsculas y minúsculas importan en GitHub).
+   Las fotos van en la carpeta images/act3/ con este formato de nombre:
+   "We_Celebrated_(17).jpg"  (también acepta "We Celebrated (17).jpg").
+   La página prueba sola estas extensiones: .jpg .jpeg .png .webp
+   (en minúscula y mayúscula), y acepta la primera foto sin número,
+   por ejemplo "We Arrived.jpg".
    ========================================================= */
 var FOLDER = 'images/act3/';
-var EXT = '.jpg';
+var EXTS = ['.jpg', '.jpeg', '.JPG', '.JPEG', '.png', '.PNG', '.webp', '.WEBP', '.Jpg', '.Jpeg'];
 var GALLERIES = {
   arrived:    { name: 'We Arrived',    count: 12 },
   connected:  { name: 'We Connected',  count: 6  },
   celebrated: { name: 'We Celebrated', count: 20 }
 };
 
-function photoSrc(name, i){
-  return FOLDER + encodeURIComponent(name + ' (' + i + ')' + EXT);
+function candidates(name, i){
+  var u = name.replace(/ /g, '_');
+  var bases = [u + '_(' + i + ')', name + ' (' + i + ')', u + '(' + i + ')', name + '(' + i + ')', u + '_' + i, name + ' ' + i];
+  if(i === 1){ bases.push(u); bases.push(name); }
+  var out = [];
+  bases.forEach(function(b){
+    EXTS.forEach(function(e){ out.push(FOLDER + encodeURIComponent(b + e)); });
+  });
+  return out;
+}
+
+function loadWithFallback(img, list, onOk, onFail){
+  var n = 0;
+  img.onerror = function(){
+    n++;
+    if(n < list.length){ img.src = list[n]; }
+    else { img.onerror = null; if(onFail) onFail(); }
+  };
+  img.onload = function(){ img.onload = null; img.onerror = null; if(onOk) onOk(list[n]); };
+  img.src = list[0];
 }
 
 var lists = {};
@@ -480,8 +499,8 @@ var lists = {};
 Object.keys(GALLERIES).forEach(function(key){
   var g = GALLERIES[key];
   var srcs = [];
-  for(var i = 1; i <= g.count; i++) srcs.push(photoSrc(g.name, i));
-  lists[key] = srcs;
+  for(var i = 1; i <= g.count; i++) srcs.push(candidates(g.name, i));
+  lists[key] = srcs.map(function(c){ return c[0]; });
 
   var host = document.querySelector('[data-gallery="' + key + '"]');
   if(!host) return;
@@ -507,8 +526,11 @@ Object.keys(GALLERIES).forEach(function(key){
     var fig = document.createElement('figure');
     fig.className = 'polaroid';
     var img = document.createElement('img');
-    img.src = src;
     img.loading = 'lazy';
+    loadWithFallback(img, src,
+      function(ok){ lists[key][idx] = ok; },
+      function(){ fig.style.display = 'none'; console.warn('Foto no encontrada: ' + g.name + ' (' + (idx + 1) + ')'); }
+    );
     img.alt = g.name + ', photo ' + (idx + 1);
     img.addEventListener('click', function(){ openLightbox(key, idx); });
     fig.appendChild(img);
