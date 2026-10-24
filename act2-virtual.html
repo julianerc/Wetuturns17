@@ -936,6 +936,7 @@
     <span class="act-label">Act 2</span>
     <h2>Virtual</h2>
     <div class="short-line">Together, wherever we are.</div>
+    <div class="act-date">Tuesday · July 21, 2026</div>
   </div>
 
   <div class="virtual-inner">
@@ -1044,5 +1045,15 @@ document.addEventListener('keydown', function(e){
 
 </script>
 
+<script>
+/* keep the current act visible in the mobile menu */
+(function(){
+  var bar = document.querySelector('.site-nav .links');
+  var a = bar && bar.querySelector('a.active');
+  if(bar && a && bar.scrollWidth > bar.clientWidth){
+    bar.scrollLeft = a.offsetLeft - bar.offsetLeft - 16;
+  }
+})();
+</script>
 </body>
 </html>
